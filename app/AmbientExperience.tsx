@@ -68,19 +68,23 @@ export function AmbientExperience() {
   }
 
   useEffect(() => {
+    bootTimerRef.current = setTimeout(() => {
+      playerReadyRef.current = true;
+      if (soundEnabledRef.current) playChorus();
+    }, 700);
+
     const unlockAutomaticSound = () => {
       if (!soundEnabledRef.current) return;
+      playerReadyRef.current = true;
       playChorus({ unmute: true });
     };
 
-    window.addEventListener("pointerdown", unlockAutomaticSound, { once: true });
+    window.addEventListener("click", unlockAutomaticSound, { once: true });
     window.addEventListener("keydown", unlockAutomaticSound, { once: true });
-    window.addEventListener("touchstart", unlockAutomaticSound, { once: true, passive: true });
 
     return () => {
-      window.removeEventListener("pointerdown", unlockAutomaticSound);
+      window.removeEventListener("click", unlockAutomaticSound);
       window.removeEventListener("keydown", unlockAutomaticSound);
-      window.removeEventListener("touchstart", unlockAutomaticSound);
       if (bootTimerRef.current) clearTimeout(bootTimerRef.current);
       bootTimerRef.current = null;
       playerReadyRef.current = false;
