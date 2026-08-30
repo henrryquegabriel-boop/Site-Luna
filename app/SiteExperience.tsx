@@ -99,7 +99,7 @@ export function SiteExperience() {
   useEffect(() => {
     const root = document.documentElement;
     const orbitElements = Array.from(
-      document.querySelectorAll<HTMLElement>(".celestial-orbit, .gifts-orbit"),
+      document.querySelectorAll<HTMLElement>(".celestial-orbit, .gifts-orbit, .venue-path"),
     ).map((element, index) => {
       const styles = window.getComputedStyle(element);
       return {
@@ -110,11 +110,11 @@ export function SiteExperience() {
       };
     });
     const floatElements = Array.from(
-      document.querySelectorAll<HTMLElement>(".balloon-garland, .gifts-moon, .rsvp-moon"),
+      document.querySelectorAll<HTMLElement>(".gifts-moon, .rsvp-moon, .venue-pin"),
     );
     const twinkleElements = Array.from(
       document.querySelectorAll<HTMLElement>(
-        ".floating-star, .gifts-star, .gifts-orbit i, .rsvp-sparkle",
+        ".floating-star, .gifts-star, .gifts-orbit i, .rsvp-sparkle, .venue-star",
       ),
     );
     const soundControl = document.querySelector<HTMLElement>(".sound-control");
@@ -136,8 +136,10 @@ export function SiteExperience() {
       });
 
       floatElements.forEach((element, index) => {
-        const amplitude = element.classList.contains("balloon-garland") ? 10 : 8;
-        const duration = element.classList.contains("rsvp-moon") ? 8 : 5.8 + index * 0.7;
+        const amplitude = element.classList.contains("venue-pin") ? 5 : 8;
+        const duration = element.classList.contains("venue-pin")
+          ? 3.8
+          : element.classList.contains("rsvp-moon") ? 8 : 5.8 + index * 0.7;
         const offset = Math.sin((elapsed / duration) * Math.PI * 2 + index * 1.35) * amplitude;
         element.style.setProperty("--js-float-y", `${offset.toFixed(2)}px`);
       });

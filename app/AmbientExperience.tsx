@@ -63,7 +63,7 @@ function scheduleFluteNote(
 }
 
 export function AmbientExperience() {
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const audioContextRef = useRef<AudioContext | null>(null);
   const loopRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -80,6 +80,12 @@ export function AmbientExperience() {
   }
 
   async function startSound() {
+    if (audioContextRef.current) {
+      await audioContextRef.current.resume().catch(() => undefined);
+      setSoundEnabled(true);
+      return;
+    }
+
     const AudioContextClass = window.AudioContext;
     const context = new AudioContextClass();
     const filter = context.createBiquadFilter();
@@ -100,10 +106,10 @@ export function AmbientExperience() {
     };
 
     audioContextRef.current = context;
-    await context.resume();
     playMelody();
     loopRef.current = setInterval(playMelody, 12_500);
     setSoundEnabled(true);
+    await context.resume().catch(() => undefined);
   }
 
   function toggleSound() {
@@ -114,7 +120,28 @@ export function AmbientExperience() {
     void startSound();
   }
 
-  useEffect(() => stopSound, []);
+  useEffect(() => {
+    void startSound();
+
+    const unlockAutomaticSound = () => {
+      if (!audioContextRef.current) return;
+      void audioContextRef.current.resume().catch(() => undefined);
+    };
+
+    window.addEventListener("pointerdown", unlockAutomaticSound, { once: true });
+    window.addEventListener("keydown", unlockAutomaticSound, { once: true });
+    window.addEventListener("touchstart", unlockAutomaticSound, { once: true, passive: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockAutomaticSound);
+      window.removeEventListener("keydown", unlockAutomaticSound);
+      window.removeEventListener("touchstart", unlockAutomaticSound);
+      if (loopRef.current) clearInterval(loopRef.current);
+      loopRef.current = null;
+      if (audioContextRef.current) void audioContextRef.current.close();
+      audioContextRef.current = null;
+    };
+  }, []);
 
   return (
     <>

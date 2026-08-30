@@ -43,7 +43,7 @@ test("keeps the invitation self-contained and production-ready", async () => {
   assert.match(experience, /requestAnimationFrame/);
   assert.match(experience, /unpkg\.com\/aos@2\.3\.4\/dist\/aos\.js/);
   assert.match(experience, /AOS\.init/);
-  assert.match(experience, /\.celestial-orbit, \.gifts-orbit/);
+  assert.match(experience, /\.celestial-orbit, \.gifts-orbit, \.venue-path/);
   assert.match(experience, /js-motion-ready/);
   assert.match(experience, /2026-10-03T17:00:00-03:00/);
   assert.match(orbit, /orbit-system/);
@@ -51,10 +51,13 @@ test("keeps the invitation self-contained and production-ready", async () => {
   assert.doesNotMatch(orbit, /<button|Pausar órbita|Retomar órbita/);
   assert.match(styles, /@keyframes celestial-spin/);
   assert.match(styles, /@keyframes gifts-orbit/);
-  assert.match(styles, /@keyframes balloon-float/);
+  assert.doesNotMatch(styles, /@keyframes balloon-float/);
+  assert.match(styles, /@keyframes venue-path-spin/);
   assert.match(styles, /@keyframes sound-invitation-pulse/);
   assert.match(styles, /\.js-motion-ready \.celestial-orbit/);
   assert.match(styles, /repeat\(auto-fit/);
   assert.match(styles, /scale\(1\.05\)/);
   assert.match(ambient, /AudioContext/);
+  assert.match(ambient, /useState\(true\)/);
+  assert.match(ambient, /void startSound\(\)/);
 });
