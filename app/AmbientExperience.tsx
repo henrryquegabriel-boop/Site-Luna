@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 const glitterDrops = Array.from({ length: 42 }, (_, index) => ({
   delay: `${-((index * 1.37) % 15).toFixed(2)}s`,
@@ -12,120 +12,65 @@ const glitterDrops = Array.from({ length: 42 }, (_, index) => ({
   symbol: index % 5 === 0 ? "✦" : index % 3 === 0 ? "·" : "✧",
 }));
 
-const melody = [
-  [392, 0, 1.5],
-  [440, 1.55, 1.3],
-  [523.25, 3, 1.8],
-  [493.88, 4.9, 1.2],
-  [440, 6.25, 1.7],
-  [392, 8.05, 2.1],
-] as const;
+const YOUTUBE_VIDEO_ID = "inQG5wTW20o";
+const CHORUS_START_SECONDS = 48;
+const CHORUS_END_SECONDS = 85;
+const YOUTUBE_PLAYER_ORIGIN = "https://www.youtube-nocookie.com";
+const YOUTUBE_PLAYER_SRC =
+  `${YOUTUBE_PLAYER_ORIGIN}/embed/${YOUTUBE_VIDEO_ID}` +
+  `?autoplay=1&controls=0&disablekb=1&end=${CHORUS_END_SECONDS}` +
+  `&enablejsapi=1&fs=0&loop=1&modestbranding=1&playlist=${YOUTUBE_VIDEO_ID}` +
+  `&playsinline=1&rel=0&start=${CHORUS_START_SECONDS}`;
 
-function scheduleFluteNote(
-  context: AudioContext,
-  destination: AudioNode,
-  frequency: number,
-  start: number,
-  duration: number,
-) {
-  const envelope = context.createGain();
-  const mainTone = context.createOscillator();
-  const airyTone = context.createOscillator();
-  const vibrato = context.createOscillator();
-  const vibratoDepth = context.createGain();
-
-  mainTone.type = "sine";
-  mainTone.frequency.setValueAtTime(frequency, start);
-  airyTone.type = "triangle";
-  airyTone.frequency.setValueAtTime(frequency * 2, start);
-  airyTone.detune.setValueAtTime(5, start);
-  vibrato.type = "sine";
-  vibrato.frequency.setValueAtTime(5.1, start);
-  vibratoDepth.gain.setValueAtTime(2.2, start);
-
-  vibrato.connect(vibratoDepth);
-  vibratoDepth.connect(mainTone.frequency);
-  mainTone.connect(envelope);
-  airyTone.connect(envelope);
-  envelope.connect(destination);
-
-  envelope.gain.setValueAtTime(0.0001, start);
-  envelope.gain.exponentialRampToValueAtTime(0.027, start + 0.24);
-  envelope.gain.setValueAtTime(0.027, start + Math.max(0.3, duration - 0.38));
-  envelope.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-
-  mainTone.start(start);
-  airyTone.start(start);
-  vibrato.start(start);
-  mainTone.stop(start + duration + 0.05);
-  airyTone.stop(start + duration + 0.05);
-  vibrato.stop(start + duration + 0.05);
-}
+type YouTubeCommand = "pauseVideo" | "playVideo" | "seekTo" | "setVolume" | "unMute";
 
 export function AmbientExperience() {
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const loopRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const playerRef = useRef<HTMLIFrameElement>(null);
+  const playerReadyRef = useRef(false);
+  const soundEnabledRef = useRef(true);
+  const bootTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function stopSound() {
-    if (loopRef.current) {
-      clearInterval(loopRef.current);
-      loopRef.current = null;
-    }
-    if (audioContextRef.current) {
-      void audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    setSoundEnabled(false);
-  }
+  const sendPlayerCommand = useCallback((command: YouTubeCommand, args: Array<boolean | number> = []) => {
+    playerRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: "command", func: command, args }),
+      YOUTUBE_PLAYER_ORIGIN,
+    );
+  }, []);
 
-  async function startSound() {
-    if (audioContextRef.current) {
-      await audioContextRef.current.resume().catch(() => undefined);
-      setSoundEnabled(true);
-      return;
-    }
+  const playChorus = useCallback(({ restart = false, unmute = false } = {}) => {
+    if (!playerReadyRef.current) return;
+    if (restart) sendPlayerCommand("seekTo", [CHORUS_START_SECONDS, true]);
+    sendPlayerCommand("setVolume", [38]);
+    if (unmute) sendPlayerCommand("unMute");
+    sendPlayerCommand("playVideo");
+  }, [sendPlayerCommand]);
 
-    const AudioContextClass = window.AudioContext;
-    const context = new AudioContextClass();
-    const filter = context.createBiquadFilter();
-    const master = context.createGain();
+  function handlePlayerLoad() {
+    playerReadyRef.current = true;
+    if (!soundEnabledRef.current) return;
 
-    filter.type = "lowpass";
-    filter.frequency.value = 2400;
-    filter.Q.value = 0.7;
-    master.gain.value = 0.72;
-    filter.connect(master);
-    master.connect(context.destination);
-
-    const playMelody = () => {
-      const start = context.currentTime + 0.12;
-      melody.forEach(([frequency, offset, duration]) => {
-        scheduleFluteNote(context, filter, frequency, start + offset, duration);
-      });
-    };
-
-    audioContextRef.current = context;
-    playMelody();
-    loopRef.current = setInterval(playMelody, 12_500);
-    setSoundEnabled(true);
-    await context.resume().catch(() => undefined);
+    if (bootTimerRef.current) clearTimeout(bootTimerRef.current);
+    bootTimerRef.current = setTimeout(() => playChorus(), 500);
   }
 
   function toggleSound() {
-    if (soundEnabled) {
-      stopSound();
+    if (soundEnabledRef.current) {
+      soundEnabledRef.current = false;
+      sendPlayerCommand("pauseVideo");
+      setSoundEnabled(false);
       return;
     }
-    void startSound();
+
+    soundEnabledRef.current = true;
+    setSoundEnabled(true);
+    playChorus({ restart: true, unmute: true });
   }
 
   useEffect(() => {
-    void startSound();
-
     const unlockAutomaticSound = () => {
-      if (!audioContextRef.current) return;
-      void audioContextRef.current.resume().catch(() => undefined);
+      if (!soundEnabledRef.current) return;
+      playChorus({ unmute: true });
     };
 
     window.addEventListener("pointerdown", unlockAutomaticSound, { once: true });
@@ -136,12 +81,11 @@ export function AmbientExperience() {
       window.removeEventListener("pointerdown", unlockAutomaticSound);
       window.removeEventListener("keydown", unlockAutomaticSound);
       window.removeEventListener("touchstart", unlockAutomaticSound);
-      if (loopRef.current) clearInterval(loopRef.current);
-      loopRef.current = null;
-      if (audioContextRef.current) void audioContextRef.current.close();
-      audioContextRef.current = null;
+      if (bootTimerRef.current) clearTimeout(bootTimerRef.current);
+      bootTimerRef.current = null;
+      playerReadyRef.current = false;
     };
-  }, []);
+  }, [playChorus]);
 
   return (
     <>
@@ -163,8 +107,19 @@ export function AmbientExperience() {
           </span>
         ))}
       </div>
+      <iframe
+        allow="autoplay; encrypted-media"
+        aria-hidden="true"
+        className="soundtrack-player"
+        loading="eager"
+        onLoad={handlePlayerLoad}
+        ref={playerRef}
+        src={YOUTUBE_PLAYER_SRC}
+        tabIndex={-1}
+        title="Floresça — Claudia Canção e Dibs Aquino (refrão)"
+      />
       <button
-        aria-label={soundEnabled ? "Pausar trilha suave" : "Ativar trilha suave"}
+        aria-label={soundEnabled ? "Pausar o refrão de Floresça" : "Ouvir o refrão de Floresça"}
         aria-pressed={soundEnabled}
         className="sound-control"
         onClick={toggleSound}
@@ -173,7 +128,7 @@ export function AmbientExperience() {
         <span className="sound-control-icon" aria-hidden="true">
           {soundEnabled ? "♫" : "♪"}
         </span>
-        <span>{soundEnabled ? "Trilha suave ativada" : "Ouvir trilha suave"}</span>
+        <span>{soundEnabled ? "Floresça · refrão" : "Ouvir Floresça"}</span>
       </button>
     </>
   );

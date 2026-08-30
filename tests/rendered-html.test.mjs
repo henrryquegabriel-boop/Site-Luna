@@ -57,7 +57,12 @@ test("keeps the invitation self-contained and production-ready", async () => {
   assert.match(styles, /\.js-motion-ready \.celestial-orbit/);
   assert.match(styles, /repeat\(auto-fit/);
   assert.match(styles, /scale\(1\.05\)/);
-  assert.match(ambient, /AudioContext/);
+  assert.match(ambient, /inQG5wTW20o/);
+  assert.match(ambient, /CHORUS_START_SECONDS = 48/);
+  assert.match(ambient, /CHORUS_END_SECONDS = 85/);
+  assert.match(ambient, /youtube-nocookie\.com/);
+  assert.match(ambient, /\/embed\/\$\{YOUTUBE_VIDEO_ID\}/);
   assert.match(ambient, /useState\(true\)/);
-  assert.match(ambient, /void startSound\(\)/);
+  assert.match(ambient, /autoplay=1/);
+  assert.doesNotMatch(ambient, /AudioContext|scheduleFluteNote/);
 });
