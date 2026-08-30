@@ -35,16 +35,14 @@ export function SiteExperience() {
     const root = document.documentElement;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (reduceMotion) return;
-
     const initializeAOS = () => {
       if (!window.AOS) return;
 
       if (root.dataset.aosInitialized !== "true") {
         window.AOS.init({
-          duration: 850,
+          duration: reduceMotion ? 480 : 850,
           easing: "ease-out-cubic",
-          offset: 72,
+          offset: reduceMotion ? 36 : 72,
           once: true,
         });
         root.dataset.aosInitialized = "true";
@@ -76,10 +74,9 @@ export function SiteExperience() {
 
   useEffect(() => {
     document.documentElement.classList.add("motion-ready");
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const revealElements = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
 
-    if (reduceMotion || !("IntersectionObserver" in window)) {
+    if (!("IntersectionObserver" in window)) {
       revealElements.forEach((element) => element.classList.add("is-revealed"));
     } else {
       const revealObserver = new IntersectionObserver(
@@ -97,6 +94,86 @@ export function SiteExperience() {
 
       return () => revealObserver.disconnect();
     }
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const orbitElements = Array.from(
+      document.querySelectorAll<HTMLElement>(".celestial-orbit, .gifts-orbit"),
+    ).map((element, index) => {
+      const styles = window.getComputedStyle(element);
+      return {
+        direction: styles.animationDirection === "reverse" ? -1 : 1,
+        duration: Math.max(6, Number.parseFloat(styles.animationDuration) || 14 + index * 3),
+        element,
+        startAngle: Number.parseFloat(styles.getPropertyValue("--orbit-angle")) || 0,
+      };
+    });
+    const floatElements = Array.from(
+      document.querySelectorAll<HTMLElement>(".balloon-garland, .gifts-moon, .rsvp-moon"),
+    );
+    const twinkleElements = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        ".floating-star, .gifts-star, .gifts-orbit i, .rsvp-sparkle",
+      ),
+    );
+    const soundControl = document.querySelector<HTMLElement>(".sound-control");
+
+    if (orbitElements.length === 0 && floatElements.length === 0) return;
+
+    let animationFrame = 0;
+    const startedAt = window.performance.now();
+
+    root.classList.add("js-motion-ready");
+
+    const animateContinuousMotion = (time: number) => {
+      const elapsed = (time - startedAt) / 1000;
+
+      orbitElements.forEach(({ direction, duration, element, startAngle }) => {
+        const angle = startAngle + direction * (elapsed / duration) * 360;
+        element.style.setProperty("--js-orbit-angle", `${angle.toFixed(3)}deg`);
+        element.style.setProperty("--js-counter-angle", `${(-angle).toFixed(3)}deg`);
+      });
+
+      floatElements.forEach((element, index) => {
+        const amplitude = element.classList.contains("balloon-garland") ? 10 : 8;
+        const duration = element.classList.contains("rsvp-moon") ? 8 : 5.8 + index * 0.7;
+        const offset = Math.sin((elapsed / duration) * Math.PI * 2 + index * 1.35) * amplitude;
+        element.style.setProperty("--js-float-y", `${offset.toFixed(2)}px`);
+      });
+
+      twinkleElements.forEach((element, index) => {
+        const wave = (Math.sin(elapsed * 2.15 + index * 0.82) + 1) / 2;
+        element.style.setProperty("--js-twinkle-opacity", `${(0.34 + wave * 0.66).toFixed(3)}`);
+        element.style.setProperty("--js-twinkle-scale", `${(0.82 + wave * 0.28).toFixed(3)}`);
+      });
+
+      if (soundControl?.getAttribute("aria-pressed") !== "true") {
+        const pulse = (Math.sin(elapsed * 2.35) + 1) / 2;
+        soundControl?.style.setProperty("--js-pulse-opacity", `${(pulse * 0.7).toFixed(3)}`);
+        soundControl?.style.setProperty("--js-pulse-scale", `${(0.98 + pulse * 0.2).toFixed(3)}`);
+      }
+
+      animationFrame = window.requestAnimationFrame(animateContinuousMotion);
+    };
+
+    animationFrame = window.requestAnimationFrame(animateContinuousMotion);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      root.classList.remove("js-motion-ready");
+      orbitElements.forEach(({ element }) => {
+        element.style.removeProperty("--js-orbit-angle");
+        element.style.removeProperty("--js-counter-angle");
+      });
+      floatElements.forEach((element) => element.style.removeProperty("--js-float-y"));
+      twinkleElements.forEach((element) => {
+        element.style.removeProperty("--js-twinkle-opacity");
+        element.style.removeProperty("--js-twinkle-scale");
+      });
+      soundControl?.style.removeProperty("--js-pulse-opacity");
+      soundControl?.style.removeProperty("--js-pulse-scale");
+    };
   }, []);
 
   useEffect(() => {

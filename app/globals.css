@@ -1820,6 +1820,50 @@ footer nav a { color: #937c87; text-decoration-color: rgba(147, 124, 135, 0.35);
   70% { opacity: 0; transform: scale(1.2); }
 }
 
+/* O JavaScript assume o movimento contínuo; os keyframes acima permanecem como fallback. */
+.js-motion-ready .balloon-garland {
+  animation: none;
+  transform: translate3d(0, var(--js-float-y, 0), 0);
+}
+
+.js-motion-ready .gifts-moon {
+  animation: none;
+  transform: translate3d(0, var(--js-float-y, 0), 0) rotate(-14deg);
+}
+
+.js-motion-ready .rsvp-moon {
+  animation: none;
+  transform: translate3d(0, var(--js-float-y, 0), 0) rotate(-14deg);
+}
+
+.js-motion-ready .celestial-orbit,
+.js-motion-ready .gifts-orbit {
+  animation: none;
+  transform: rotate(var(--js-orbit-angle, 0deg));
+}
+
+.js-motion-ready .celestial-orbit .orbit-object {
+  animation: none;
+  transform: translate(-50%, -50%) rotate(var(--js-counter-angle, 0deg));
+}
+
+.js-motion-ready .floating-star,
+.js-motion-ready .gifts-star,
+.js-motion-ready .gifts-orbit i,
+.js-motion-ready .rsvp-sparkle {
+  animation: none;
+  opacity: var(--js-twinkle-opacity, 0.7);
+  scale: var(--js-twinkle-scale, 1);
+}
+
+.js-motion-ready .sound-control::after {
+  animation: none;
+  opacity: var(--js-pulse-opacity, 0.55);
+  transform: scale(var(--js-pulse-scale, 1));
+}
+
+.js-motion-ready .sound-control[aria-pressed="true"]::after { opacity: 0; }
+
 /* Área administrativa */
 .admin-page { background: linear-gradient(145deg, #fffaf7, #f8f4fb); min-height: 100svh; padding: 3rem 5vw 6rem; }
 .admin-shell { margin: 0 auto; max-width: 1180px; }
@@ -1948,23 +1992,26 @@ footer nav a { color: #937c87; text-decoration-color: rgba(147, 124, 135, 0.35);
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .floating-star,
-  .balloon-garland,
   .glitter-drop,
   .orbit-one,
   .orbit-two,
   .hero-enter,
-  .art-enter,
-  .gifts-glow,
-  .gifts-moon,
-  .gifts-orbit,
-  .gifts-orbit i,
-  .gifts-star,
-  .rsvp-moon,
-  .rsvp-sparkle,
-  .sound-control::after,
-  .sound-control[aria-pressed="true"] .sound-control-icon { animation: none; }
-  html.aos-ready [data-aos] { opacity: 1 !important; transform: none !important; }
-  .motion-ready [data-reveal] { filter: none; opacity: 1; transform: none; }
-  * { transition-duration: 0.01ms !important; }
+  .art-enter { animation: none; }
+  .motion-ready [data-reveal] {
+    filter: none;
+    transform: translateY(10px);
+    transition-duration: 420ms;
+  }
+  .motion-ready [data-reveal].is-revealed { opacity: 1; transform: none; }
+  html.aos-ready [data-aos="fade-up"] {
+    transition-duration: 480ms !important;
+  }
+  html.aos-ready [data-aos="fade-up"]:not(.aos-animate) {
+    opacity: 0.01;
+    transform: translate3d(0, 16px, 0);
+  }
+  html.aos-ready [data-aos="fade-up"].aos-animate {
+    opacity: 1;
+    transform: none;
+  }
 }
