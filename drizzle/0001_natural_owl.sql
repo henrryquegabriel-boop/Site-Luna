@@ -1,0 +1,1 @@
+CREATE INDEX `idx_rsvps_created_at` ON `rsvps` (`created_at`);

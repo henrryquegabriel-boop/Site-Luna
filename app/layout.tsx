@@ -1,0 +1,47 @@
+import type { Metadata } from "next";
+import { headers } from "next/headers";
+import "./globals.css";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
+  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const metadataBase = new URL(`${protocol}://${host}`);
+  const title = "1 ano da Luna — Confirmação de presença";
+  const description = "Confirme sua presença na celebração do primeiro aninho da Luna, dia 3 de outubro de 2026.";
+
+  return {
+    metadataBase,
+    title,
+    description,
+    icons: {
+      icon: "/favicon.svg",
+      shortcut: "/favicon.svg",
+    },
+    openGraph: {
+      title,
+      description,
+      images: [{ url: new URL("/og.png", metadataBase).toString(), width: 1729, height: 909 }],
+      locale: "pt_BR",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [new URL("/og.png", metadataBase).toString()],
+    },
+  };
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="pt-BR">
+      <body>{children}</body>
+    </html>
+  );
+}
