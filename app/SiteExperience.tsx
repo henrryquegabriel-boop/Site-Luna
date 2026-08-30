@@ -3,6 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 
 const EVENT_DATE = new Date("2026-10-03T17:00:00-03:00");
+const AOS_SCRIPT_ID = "aos-cdn-script";
+const AOS_SCRIPT_SRC = "https://unpkg.com/aos@2.3.4/dist/aos.js";
+
+type AOSApi = {
+  init: (options?: Record<string, boolean | number | string>) => void;
+  refreshHard: () => void;
+};
+
+declare global {
+  interface Window {
+    AOS?: AOSApi;
+  }
+}
 
 function getTimeLeft() {
   const distance = Math.max(0, EVENT_DATE.getTime() - Date.now());
@@ -17,6 +30,49 @@ function getTimeLeft() {
 export function SiteExperience() {
   const headerRef = useRef<HTMLElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion) return;
+
+    const initializeAOS = () => {
+      if (!window.AOS) return;
+
+      if (root.dataset.aosInitialized !== "true") {
+        window.AOS.init({
+          duration: 850,
+          easing: "ease-out-cubic",
+          offset: 72,
+          once: true,
+        });
+        root.dataset.aosInitialized = "true";
+      }
+
+      root.classList.add("aos-ready");
+      window.AOS.refreshHard();
+    };
+
+    if (window.AOS) {
+      initializeAOS();
+      return;
+    }
+
+    const existingScript = document.getElementById(AOS_SCRIPT_ID) as HTMLScriptElement | null;
+    const script = existingScript ?? document.createElement("script");
+
+    if (!existingScript) {
+      script.id = AOS_SCRIPT_ID;
+      script.src = AOS_SCRIPT_SRC;
+      script.async = true;
+      document.body.appendChild(script);
+    }
+
+    script.addEventListener("load", initializeAOS, { once: true });
+
+    return () => script.removeEventListener("load", initializeAOS);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.add("motion-ready");

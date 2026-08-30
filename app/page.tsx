@@ -169,7 +169,12 @@ export default function Home() {
         </a>
       </section>
 
-      <section className="story-section" id="historia" aria-labelledby="historia-titulo">
+      <section
+        className="story-section"
+        id="historia"
+        aria-labelledby="historia-titulo"
+        data-aos="fade-up"
+      >
         <div className="story-copy" data-reveal>
           <p className="eyebrow">Uma história escrita por Deus</p>
           <h2 id="historia-titulo">
@@ -204,7 +209,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="details-section" id="detalhes" aria-labelledby="detalhes-titulo">
+      <section
+        className="details-section"
+        id="detalhes"
+        aria-labelledby="detalhes-titulo"
+        data-aos="fade-up"
+      >
         <div className="section-heading" data-reveal>
           <span className="mini-star" aria-hidden="true">✦</span>
           <p>Reserve essa data</p>
@@ -268,7 +278,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="gifts-section" id="presentes" aria-labelledby="presentes-titulo">
+      <section
+        className="gifts-section"
+        id="presentes"
+        aria-labelledby="presentes-titulo"
+        data-aos="fade-up"
+      >
         <div className="gifts-cosmos" aria-hidden="true" data-reveal>
           <div
             className="gifts-celestial-layer"
@@ -321,7 +336,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="rsvp-section" id="confirmar" aria-labelledby="rsvp-titulo">
+      <section
+        className="rsvp-section"
+        id="confirmar"
+        aria-labelledby="rsvp-titulo"
+        data-aos="fade-up"
+      >
         <div
           className="rsvp-decoration"
           aria-hidden="true"

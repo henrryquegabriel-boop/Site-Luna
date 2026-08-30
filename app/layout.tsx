@@ -41,6 +41,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://unpkg.com/aos@2.3.4/dist/aos.css"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
