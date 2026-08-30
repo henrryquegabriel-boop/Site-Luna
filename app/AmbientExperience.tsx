@@ -18,18 +18,22 @@ const CHORUS_END_SECONDS = 85;
 const YOUTUBE_PLAYER_ORIGIN = "https://www.youtube-nocookie.com";
 const YOUTUBE_PLAYER_SRC =
   `${YOUTUBE_PLAYER_ORIGIN}/embed/${YOUTUBE_VIDEO_ID}` +
-  `?autoplay=1&controls=0&disablekb=1&end=${CHORUS_END_SECONDS}` +
+  `?autoplay=0&controls=0&disablekb=1&end=${CHORUS_END_SECONDS}` +
   `&enablejsapi=1&fs=0&loop=1&modestbranding=1&playlist=${YOUTUBE_VIDEO_ID}` +
   `&playsinline=1&rel=0&start=${CHORUS_START_SECONDS}`;
 
 type YouTubeCommand = "pauseVideo" | "playVideo" | "seekTo" | "setVolume" | "unMute";
 
 export function AmbientExperience() {
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [gateOpening, setGateOpening] = useState(false);
+  const [gateVisible, setGateVisible] = useState(true);
+  const [playerPrepared, setPlayerPrepared] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const playerRef = useRef<HTMLIFrameElement>(null);
   const playerReadyRef = useRef(false);
-  const soundEnabledRef = useRef(true);
+  const soundEnabledRef = useRef(false);
   const bootTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sendPlayerCommand = useCallback((command: YouTubeCommand, args: Array<boolean | number> = []) => {
     playerRef.current?.contentWindow?.postMessage(
@@ -48,10 +52,20 @@ export function AmbientExperience() {
 
   function handlePlayerLoad() {
     playerReadyRef.current = true;
-    if (!soundEnabledRef.current) return;
-
     if (bootTimerRef.current) clearTimeout(bootTimerRef.current);
-    bootTimerRef.current = setTimeout(() => playChorus(), 500);
+    bootTimerRef.current = null;
+    setPlayerPrepared(true);
+  }
+
+  function openInvitation() {
+    if (!playerPrepared || gateOpening) return;
+
+    soundEnabledRef.current = true;
+    setSoundEnabled(true);
+    playChorus({ restart: true, unmute: true });
+    setGateOpening(true);
+    document.documentElement.classList.remove("invitation-locked");
+    gateTimerRef.current = setTimeout(() => setGateVisible(false), 680);
   }
 
   function toggleSound() {
@@ -68,28 +82,21 @@ export function AmbientExperience() {
   }
 
   useEffect(() => {
+    document.documentElement.classList.add("invitation-locked");
     bootTimerRef.current = setTimeout(() => {
       playerReadyRef.current = true;
-      if (soundEnabledRef.current) playChorus();
-    }, 700);
-
-    const unlockAutomaticSound = () => {
-      if (!soundEnabledRef.current) return;
-      playerReadyRef.current = true;
-      playChorus({ unmute: true });
-    };
-
-    window.addEventListener("click", unlockAutomaticSound, { once: true });
-    window.addEventListener("keydown", unlockAutomaticSound, { once: true });
+      setPlayerPrepared(true);
+    }, 900);
 
     return () => {
-      window.removeEventListener("click", unlockAutomaticSound);
-      window.removeEventListener("keydown", unlockAutomaticSound);
+      document.documentElement.classList.remove("invitation-locked");
       if (bootTimerRef.current) clearTimeout(bootTimerRef.current);
+      if (gateTimerRef.current) clearTimeout(gateTimerRef.current);
       bootTimerRef.current = null;
+      gateTimerRef.current = null;
       playerReadyRef.current = false;
     };
-  }, [playChorus]);
+  }, []);
 
   return (
     <>
@@ -122,6 +129,47 @@ export function AmbientExperience() {
         tabIndex={-1}
         title="Floresça — Claudia Canção e Dibs Aquino (refrão)"
       />
+      {gateVisible ? (
+        <div
+          aria-labelledby="invitation-gate-title"
+          aria-modal="true"
+          className={`invitation-gate${gateOpening ? " is-opening" : ""}`}
+          role="dialog"
+        >
+          <div className="invitation-gate-card">
+            <div className="invitation-gate-celestial" aria-hidden="true">
+              <span className="invitation-gate-orbit invitation-gate-orbit-one" />
+              <span className="invitation-gate-orbit invitation-gate-orbit-two" />
+              <span className="invitation-gate-moon">☾</span>
+              <span className="invitation-gate-star invitation-gate-star-one">✦</span>
+              <span className="invitation-gate-star invitation-gate-star-two">✧</span>
+              <span className="invitation-gate-star invitation-gate-star-three">✦</span>
+            </div>
+            <p className="invitation-gate-eyebrow">Um convite muito especial</p>
+            <h2 id="invitation-gate-title">E Deus criou Luna!</h2>
+            <p className="invitation-gate-copy">
+              Toque para abrir o convite com o refrão de “Floresça”.
+            </p>
+            <button
+              aria-busy={!playerPrepared}
+              className="invitation-gate-button"
+              disabled={!playerPrepared}
+              onClick={openInvitation}
+              type="button"
+            >
+              {playerPrepared ? (
+                <>
+                  <span>Abrir convite</span>
+                  <span aria-hidden="true">♫</span>
+                </>
+              ) : (
+                <span>Preparando o convite…</span>
+              )}
+            </button>
+            <small>Com carinho, família da Luna</small>
+          </div>
+        </div>
+      ) : null}
       <button
         aria-label={soundEnabled ? "Pausar o refrão de Floresça" : "Ouvir o refrão de Floresça"}
         aria-pressed={soundEnabled}

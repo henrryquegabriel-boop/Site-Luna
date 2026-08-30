@@ -62,7 +62,10 @@ test("keeps the invitation self-contained and production-ready", async () => {
   assert.match(ambient, /CHORUS_END_SECONDS = 85/);
   assert.match(ambient, /youtube-nocookie\.com/);
   assert.match(ambient, /\/embed\/\$\{YOUTUBE_VIDEO_ID\}/);
-  assert.match(ambient, /useState\(true\)/);
-  assert.match(ambient, /autoplay=1/);
+  assert.match(ambient, /Abrir convite/);
+  assert.match(ambient, /openInvitation/);
+  assert.match(ambient, /useState\(false\)/);
+  assert.match(ambient, /autoplay=0/);
   assert.doesNotMatch(ambient, /AudioContext|scheduleFluteNote/);
+  assert.match(styles, /\.invitation-gate/);
 });
