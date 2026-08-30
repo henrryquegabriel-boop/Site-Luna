@@ -64,8 +64,11 @@ test("keeps the invitation self-contained and production-ready", async () => {
   assert.match(ambient, /\/embed\/\$\{YOUTUBE_VIDEO_ID\}/);
   assert.match(ambient, /Abrir convite/);
   assert.match(ambient, /openInvitation/);
+  assert.match(ambient, /invitation-gate-falling-star/);
+  assert.doesNotMatch(ambient, /Toque para abrir o convite com o refrão/);
   assert.match(ambient, /useState\(false\)/);
   assert.match(ambient, /autoplay=0/);
   assert.doesNotMatch(ambient, /AudioContext|scheduleFluteNote/);
   assert.match(styles, /\.invitation-gate/);
+  assert.match(styles, /@keyframes invitation-star-fall/);
 });

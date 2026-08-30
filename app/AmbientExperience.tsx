@@ -12,6 +12,16 @@ const glitterDrops = Array.from({ length: 42 }, (_, index) => ({
   symbol: index % 5 === 0 ? "✦" : index % 3 === 0 ? "·" : "✧",
 }));
 
+const gateStars = Array.from({ length: 34 }, (_, index) => ({
+  delay: `${-((index * 0.83) % 12).toFixed(2)}s`,
+  drift: `${((index * 19) % 76) - 38}px`,
+  duration: `${7 + ((index * 5) % 7)}s`,
+  left: `${(index * 31 + 7) % 100}%`,
+  opacity: `${0.24 + ((index * 13) % 42) / 100}`,
+  size: `${0.38 + ((index * 11) % 42) / 100}rem`,
+  symbol: index % 4 === 0 ? "✦" : index % 3 === 0 ? "✧" : "·",
+}));
+
 const YOUTUBE_VIDEO_ID = "inQG5wTW20o";
 const CHORUS_START_SECONDS = 48;
 const CHORUS_END_SECONDS = 85;
@@ -136,6 +146,24 @@ export function AmbientExperience() {
           className={`invitation-gate${gateOpening ? " is-opening" : ""}`}
           role="dialog"
         >
+          <div className="invitation-gate-stars" aria-hidden="true">
+            {gateStars.map((star, index) => (
+              <span
+                className="invitation-gate-falling-star"
+                key={index}
+                style={{
+                  "--gate-star-delay": star.delay,
+                  "--gate-star-drift": star.drift,
+                  "--gate-star-duration": star.duration,
+                  "--gate-star-left": star.left,
+                  "--gate-star-opacity": star.opacity,
+                  "--gate-star-size": star.size,
+                } as CSSProperties}
+              >
+                {star.symbol}
+              </span>
+            ))}
+          </div>
           <div className="invitation-gate-card">
             <div className="invitation-gate-celestial" aria-hidden="true">
               <span className="invitation-gate-orbit invitation-gate-orbit-one" />
@@ -147,9 +175,6 @@ export function AmbientExperience() {
             </div>
             <p className="invitation-gate-eyebrow">Um convite muito especial</p>
             <h2 id="invitation-gate-title">E Deus criou Luna!</h2>
-            <p className="invitation-gate-copy">
-              Toque para abrir o convite com o refrão de “Floresça”.
-            </p>
             <button
               aria-busy={!playerPrepared}
               className="invitation-gate-button"
@@ -158,10 +183,7 @@ export function AmbientExperience() {
               type="button"
             >
               {playerPrepared ? (
-                <>
-                  <span>Abrir convite</span>
-                  <span aria-hidden="true">♫</span>
-                </>
+                <span>Abrir convite</span>
               ) : (
                 <span>Preparando o convite…</span>
               )}

@@ -1815,6 +1815,20 @@ html.invitation-locked body { overflow: hidden; }
 .invitation-gate::after { animation: invitation-halo 12s ease-in-out -6s infinite; height: min(62vw, 680px); width: min(62vw, 680px); }
 .invitation-gate.is-opening { opacity: 0; pointer-events: none; visibility: hidden; }
 
+.invitation-gate-stars { inset: 0; overflow: hidden; pointer-events: none; position: absolute; z-index: 0; }
+
+.invitation-gate-falling-star {
+  animation: invitation-star-fall var(--gate-star-duration) linear var(--gate-star-delay) infinite;
+  color: rgba(200, 153, 67, var(--gate-star-opacity));
+  filter: drop-shadow(0 0 6px rgba(255, 229, 151, 0.72));
+  font-size: var(--gate-star-size);
+  left: var(--gate-star-left);
+  line-height: 1;
+  position: absolute;
+  top: -3rem;
+  will-change: transform, opacity;
+}
+
 .invitation-gate-card {
   align-items: center;
   backdrop-filter: blur(18px);
@@ -1893,8 +1907,6 @@ html.invitation-locked body { overflow: hidden; }
   text-shadow: none;
 }
 
-.invitation-gate-copy { color: var(--muted); margin: 1.25rem auto 1.7rem; max-width: 390px; }
-
 .invitation-gate-button {
   align-items: center;
   background: linear-gradient(135deg, #bf5f83, #9b668d);
@@ -1907,8 +1919,8 @@ html.invitation-locked body { overflow: hidden; }
   font-family: var(--sans);
   font-size: 0.82rem;
   font-weight: 800;
-  gap: 0.7rem;
   justify-content: center;
+  margin-top: 1.7rem;
   min-height: 54px;
   min-width: 210px;
   padding: 0.85rem 1.35rem;
@@ -1932,6 +1944,11 @@ html.invitation-locked body { overflow: hidden; }
 
 @keyframes invitation-star-orbit { to { transform: rotate(360deg); } }
 @keyframes invitation-star-twinkle { 0%, 100% { opacity: 0.35; transform: scale(0.78); } 50% { opacity: 1; transform: scale(1.18); } }
+@keyframes invitation-star-fall {
+  0% { opacity: 0; transform: translate3d(0, -8vh, 0) rotate(0deg) scale(0.75); }
+  12%, 82% { opacity: var(--gate-star-opacity); }
+  100% { opacity: 0; transform: translate3d(var(--gate-star-drift), 112vh, 0) rotate(320deg) scale(1.12); }
+}
 
 .sound-control {
   align-items: center;
@@ -2190,6 +2207,7 @@ html.invitation-locked body { overflow: hidden; }
   .invitation-gate::after,
   .invitation-gate-moon,
   .invitation-gate-star,
+  .invitation-gate-falling-star,
   .orbit-one,
   .orbit-two,
   .hero-enter,
