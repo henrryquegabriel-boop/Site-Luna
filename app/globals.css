@@ -1656,6 +1656,52 @@ input::placeholder, textarea::placeholder { color: #b4a5ac; }
 
 .honeypot { height: 0; left: -10000px; opacity: 0; overflow: hidden; position: absolute; width: 0; }
 
+/* Convites nominais: preserve the invitation's palette and keep controls legible. */
+.family-rsvp, .family-management, .legacy-panel { font-family: var(--sans); font-size: 1rem; line-height: 1.6; min-width: 0; }
+.family-rsvp h3 { font-family: var(--serif); font-size: clamp(1.6rem, 3vw, 2.2rem); margin: .35rem 0; overflow-wrap: anywhere; }
+.family-rsvp p { margin: .4rem 0; }
+.family-rsvp .field > span, .family-rsvp .choice, .family-rsvp .form-error, .family-rsvp .privacy-note { font-size: .875rem; }
+.family-rsvp input, .family-rsvp textarea { font-size: 1rem; }
+.family-note { background: #f4edf2; border-left: 3px solid var(--gold); border-radius: 0 12px 12px 0; color: #604859; padding: 1rem; }
+.member-response { border: 0; border-top: 1px solid #e6d7e0; margin: 0; padding: 1rem 0 0; min-width: 0; }
+.member-response legend { font-weight: 700; max-width: 100%; overflow-wrap: anywhere; padding: 0 .5rem 0 0; }
+.member-response small, .family-summary small { color: #756272; display: block; font-size: .875rem; font-weight: 400; }
+.family-summary { list-style: none; padding: 0; margin: .5rem 0; text-align: left; }
+.family-summary li { align-items: center; border-bottom: 1px solid #ecdee6; display: flex; flex-wrap: wrap; gap: .5rem 1rem; justify-content: space-between; padding: .85rem 0; overflow-wrap: anywhere; }
+.family-summary li > div, .family-summary li > strong { min-width: 0; flex: 1; }
+.family-summary li > span { font-size: .875rem; }
+.family-management { display: grid; gap: 1.5rem; }
+.family-admin .stats-grid { margin-bottom: 0; }
+.family-admin .stat-card span, .family-admin .stat-card small, .family-admin .admin-link, .family-admin .field > span, .family-admin .form-error, .family-admin .status-pill { font-size: .875rem; }
+.family-admin button.admin-link { cursor: pointer; font-family: inherit; min-height: 44px; }
+.family-admin button:disabled { cursor: not-allowed; opacity: .6; }
+.family-admin :is(button, a, summary, select):focus-visible { outline: 3px solid #a95373; outline-offset: 4px; }
+.family-admin .admin-header h1 { font-size: clamp(2rem, 5vw, 3.3rem); }
+.family-tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 1rem; align-items: start; }
+.family-tool, .legacy-panel { border: 1px solid #e6d7e0; border-radius: 20px; background: #fffdfb; padding: 1.25rem; min-width: 0; }
+.family-tool summary, .legacy-panel summary { cursor: pointer; font-weight: 700; min-height: 44px; }
+.family-create { display: grid; gap: 1rem; margin-top: 1rem; }
+.family-create p { margin: 0; }
+.family-create input, .family-create select { font-size: 1rem; }
+.family-create select { background: white; border: 1px solid #d8c6d1; border-radius: 13px; color: var(--ink); padding: .8rem; min-height: 50px; width: 100%; }
+.member-editor { display: grid; grid-template-columns: minmax(0, 1fr) 8rem; gap: .75rem; padding-top: 1rem; border-top: 1px solid #ecdee6; }
+.member-editor button { justify-self: start; }
+.family-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 29rem), 1fr)); align-items: start; gap: 1.25rem; }
+.family-card { background: #fffdfb; border: 1px solid #e6d7e0; border-radius: 24px; box-shadow: var(--shadow-card); min-width: 0; padding: clamp(1rem, 3vw, 1.75rem); }
+.family-card header { align-items: start; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; }
+.family-card h2 { font-size: 1.7rem; margin: 0; overflow-wrap: anywhere; }
+.family-card p { font-size: .875rem; overflow-wrap: anywhere; }
+.family-card .admin-actions { margin-top: 1rem; }
+.status-pending { background: #f6eedc; color: #735820; }
+.admin-notice { color: #295d4e; background: #e3f0e9; border-radius: 12px; margin: 0; padding: 1rem; overflow-wrap: anywhere; }
+.import-preview { border-top: 1px solid #e6d7e0; padding-top: 1rem; display: grid; gap: .75rem; max-height: 32rem; overflow: auto; overflow-wrap: anywhere; }
+.legacy-panel { margin-top: 2rem; }
+@media (max-width: 480px) {
+  .member-editor { grid-template-columns: minmax(0, 1fr); }
+  .family-rsvp .choice-row { grid-template-columns: minmax(0, 1fr); }
+  .family-admin .admin-actions { gap: .65rem; flex-wrap: wrap; }
+}
+
 .form-error {
   background: rgba(184, 74, 92, 0.09);
   border-radius: 11px;

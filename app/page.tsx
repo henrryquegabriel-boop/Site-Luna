@@ -358,8 +358,8 @@ export default function Home() {
           <p className="eyebrow">Faça parte desse momento</p>
           <h2 id="rsvp-titulo">Sua presença é o nosso presente</h2>
           <p>
-            Conte para nós se você poderá estar presente. A resposta é simples,
-            segura e fica registrada na mesma hora.
+            Abra o link individual da sua família e confirme a presença de cada
+            pessoa convidada. Estamos esperando vocês com muito carinho.
           </p>
           <div className="rsvp-deadline">
             <span aria-hidden="true">♡</span>

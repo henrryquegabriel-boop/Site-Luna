@@ -14,6 +14,8 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase,
     title,
     description,
+    referrer: "strict-origin",
+    alternates: { canonical: "/" },
     icons: {
       icon: "/favicon.svg",
       shortcut: "/favicon.svg",

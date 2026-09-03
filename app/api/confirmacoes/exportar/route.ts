@@ -1,45 +1,28 @@
-import { desc } from "drizzle-orm";
-import { getChatGPTUser } from "../../../chatgpt-auth";
-import { getAllowedAdminEmails } from "../../../admin-emails";
-import { ensureRsvpSchema, getDb } from "../../../../db";
-import { rsvps } from "../../../../db/schema";
+import { getRawDb } from "../../../../db";
+import { listInvitations } from "../../../../lib/invitation-store";
+import { apiError, privateHeaders, requireAdmin } from "../../../../lib/api";
+import { csvCell, invitePath } from "../../../../lib/invitations";
 
 export const dynamic = "force-dynamic";
-
-function csvCell(value: string | number) {
-  return `"${String(value).replace(/"/g, '""')}"`;
-}
-
-export async function GET() {
-  const user = await getChatGPTUser();
-  const allowedEmails = getAllowedAdminEmails();
-
-  if (!user || !allowedEmails.includes(user.email.toLowerCase())) {
-    return new Response("Não autorizado", { status: 401 });
-  }
-
-  await ensureRsvpSchema();
-  const rows = await getDb().select().from(rsvps).orderBy(desc(rsvps.createdAt), desc(rsvps.id)).limit(5000);
-  const header = ["Nome", "Presença", "Adultos", "Crianças", "WhatsApp", "Recado", "Registrado em"];
-  const lines = [
-    header.map(csvCell).join(","),
-    ...rows.map((row) =>
-      [
-        row.guestName,
-        row.attendance === "sim" ? "Sim" : "Não",
-        row.adults,
-        row.children,
-        row.phone,
-        row.message,
-        row.createdAt,
-      ].map(csvCell).join(","),
-    ),
-  ];
-
-  return new Response(`\uFEFF${lines.join("\r\n")}`, {
-    headers: {
-      "Content-Disposition": 'attachment; filename="confirmacoes-luna.csv"',
-      "Content-Type": "text/csv; charset=utf-8",
-    },
-  });
+export async function GET(request: Request) {
+  try {
+    await requireAdmin();
+    const url = new URL(request.url);
+    let lines: unknown[][];
+    let filename = "confirmacoes-luna.csv";
+    if (url.searchParams.has("historico")) {
+      const { results } = await getRawDb().prepare("SELECT * FROM rsvps ORDER BY created_at DESC, id DESC").all();
+      lines = [["Nome", "Presença", "Adultos", "Crianças", "WhatsApp", "Recado", "Registrado em"], ...results.map((row) => [row.guest_name, row.attendance, row.adults, row.children, row.phone, row.message, row.created_at])];
+      filename = "historico-confirmacoes-luna.csv";
+    } else {
+      const families = await listInvitations(getRawDb());
+      if (url.searchParams.has("links")) {
+        lines = [["Família", "Responsável", "Convite ativo", "Link individual"], ...families.map((family) => [family.familyName, family.headName, family.active ? "Sim" : "Não", new URL(invitePath(family.token), url.origin).href])];
+        filename = "links-familias-luna.csv";
+      } else {
+        lines = [["Família", "Responsável", "Convidado", "Tipo", "Resposta", "Convite ativo", "Respondido em", "Recado"], ...families.flatMap((family) => family.members.map((member) => [family.familyName, family.headName, member.name, member.kind === "adulto" ? "Adulto" : "Criança", member.attendance === "sim" ? "Vai" : member.attendance === "nao" ? "Não vai" : "Pendente", family.active ? "Sim" : "Não", family.respondedAt, family.message]))];
+      }
+    }
+    return new Response("\uFEFF" + lines.map((line) => line.map(csvCell).join(";")).join("\r\n"), { headers: { ...privateHeaders, "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${filename}"` } });
+  } catch (error) { return apiError(error); }
 }
