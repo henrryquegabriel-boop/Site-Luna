@@ -1,6 +1,7 @@
 import { AmbientExperience } from "./AmbientExperience";
 import { OrbitExperience } from "./OrbitExperience";
-import { RsvpForm } from "./RsvpForm";
+import { RsvpGate } from "./RsvpGate";
+import type { InvitationSearchParams } from "./RsvpGate";
 import { CelebrationCountdown, SiteExperience } from "./SiteExperience";
 import type { CSSProperties } from "react";
 import balloons from "./assets/balloons.webp?inline";
@@ -51,7 +52,9 @@ const giftSuggestions = [
   "Livro infantil cristão",
 ];
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default function Home({ searchParams }: { searchParams?: InvitationSearchParams }) {
   return (
     <main id="inicio">
       <SiteExperience />
@@ -375,7 +378,7 @@ export default function Home() {
         </div>
 
         <div data-reveal style={{ "--reveal-delay": "130ms" } as CSSProperties}>
-          <RsvpForm />
+          <RsvpGate searchParams={searchParams} />
         </div>
       </section>
 

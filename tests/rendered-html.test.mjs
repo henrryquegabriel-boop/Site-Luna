@@ -29,7 +29,7 @@ test("keeps the invitation self-contained and production-ready", async () => {
   assert.match(page, /rainbow-symmetric\.png\?inline/);
   assert.match(page, /baby-luna\.png\?inline/);
   assert.match(page, /https:\/\/maps\.app\.goo\.gl\/ZKapPHJ2PfYyw7B3A/);
-  assert.match(page, /<RsvpForm \/>/);
+  assert.match(page, /<RsvpGate searchParams=\{searchParams\} \/>/);
   assert.match(page, /id="presentes"/);
   assert.match(page, /gifts-moon/);
   assert.equal(page.match(/data-aos="fade-up"/g)?.length, 4);

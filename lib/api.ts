@@ -5,7 +5,7 @@ import { InvitationError, object } from "./invitations";
 export const privateHeaders = { "Cache-Control": "private, no-store, max-age=0", "Referrer-Policy": "strict-origin", "X-Robots-Tag": "noindex, nofollow" };
 export function json(data: unknown, status = 200) { return Response.json(data, { status, headers: privateHeaders }); }
 export function apiError(error: unknown) {
-  if (error instanceof InvitationError) return json({ error: error.message }, error.status);
+  if (error instanceof InvitationError) return json({ error: error.message, code: error.code }, error.status);
   console.error("Invitation request failed; no guest data logged.");
   return json({ error: "Não foi possível acessar as confirmações agora. Tente novamente em instantes." }, 503);
 }

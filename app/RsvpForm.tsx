@@ -1,91 +1,67 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { FormEvent } from "react";
-import type { Attendance, Invitation } from "../lib/invitations";
+import type { Attendance, GuestInvitation, PendingInvitation } from "../lib/invitations";
+import { kindLabels } from "../lib/invitations";
 import { clientFetch } from "../lib/client-fetch";
+import { ConfirmationReceipt } from "./ConfirmationReceipt";
 
-export function RsvpForm() {
-  const [invitation, setInvitation] = useState<Invitation | null>(null);
-  const [state, setState] = useState<"loading" | "missing" | "ready" | "sending" | "success" | "error">("loading");
+export function RsvpForm({ invitation, token }: { invitation: PendingInvitation; token: string }) {
+  const [state, setState] = useState<"ready" | "review" | "sending" | "confirmed">("ready");
   const [error, setError] = useState("");
-  const [answers, setAnswers] = useState<Record<string, Attendance>>({});
+  const [answers, setAnswers] = useState<Record<string, Attendance>>(
+    Object.fromEntries(invitation.members.map((member) => [member.id, member.attendance])),
+  );
   const [message, setMessage] = useState("");
-  const token = useRef("");
+  const [anyAttending, setAnyAttending] = useState(false);
   const sending = useRef(false);
 
-  async function loadInvitation(signal?: AbortSignal) {
-    if (signal?.aborted) return;
-    setState("loading"); setError("");
-    token.current = new URLSearchParams(window.location.search).get("convite") ?? "";
-    if (!token.current) { setState("missing"); return; }
-    try {
-      if (!/^[a-f0-9]{64}$/.test(token.current)) throw new Error("Este link está incompleto ou é inválido. Peça o convite à família da Luna.");
-      const response = await clientFetch("/api/convite", { headers: { Authorization: `Bearer ${token.current}` }, cache: "no-store", signal });
-      const data = await response.json() as { invitation: Invitation; error?: string };
-      if (!response.ok) throw new Error(data.error || "Não foi possível abrir seu convite.");
-      const received = data.invitation as Invitation;
-      setInvitation(received);
-      setAnswers(Object.fromEntries(received.members.map((member) => [member.id, member.attendance])));
-      setMessage(received.message); setState("ready");
-    } catch (error) {
-      if (signal?.aborted) return;
-      setInvitation(null); setError(error instanceof Error ? error.message : "Verifique sua conexão e tente novamente."); setState("error");
-    }
+  function review(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setError(""); setState("review");
   }
-
-  useEffect(() => {
-    const controller = new AbortController();
-    void Promise.resolve().then(() => loadInvitation(controller.signal));
-    return () => controller.abort();
-  }, []);
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!invitation || sending.current) return;
+  async function submit() {
+    if (sending.current) return;
     sending.current = true; setState("sending"); setError("");
     try {
       const response = await clientFetch("/api/convite", {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.current}` },
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ revision: invitation.revision, responses: invitation.members.map((member) => ({ id: member.id, attendance: answers[member.id] })), message }),
       });
-      const data = await response.json() as { invitation: Invitation; error?: string };
-      if (!response.ok) throw new Error(data.error || "Não foi possível registrar a resposta.");
-      setInvitation(data.invitation); setState("success");
+      const data = await response.json() as { invitation?: GuestInvitation; error?: string; code?: string };
+      if (data.code === "ALREADY_CONFIRMED") {
+        // A saved response from another tab wins. Reload the authoritative server gate.
+        window.location.reload(); return;
+      }
+      if (!response.ok || data.invitation?.status !== "Confirmado") throw new Error(data.error || "Não foi possível registrar sua resposta.");
+      setAnyAttending(data.invitation.anyAttending); setState("confirmed");
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Verifique sua conexão. Você pode tentar novamente sem criar outra confirmação.");
-      setState("ready");
+      setError(error instanceof Error ? error.message : "Verifique sua conexão. Recarregue a página para consultar se a resposta foi salva.");
+      setState("review");
     } finally { sending.current = false; }
   }
 
-  if (state === "loading") return <div className="form-card family-rsvp" role="status"><p>Carregando seu convite…</p></div>;
-  if (state === "missing") return (
-    <div className="form-card family-rsvp">
-      <p className="form-kicker">Um convite para sua família</p>
-      <h3>Você tem um link especial</h3>
-      <p>Para confirmar, abra o convite individual enviado ao responsável pela sua família. Nele estarão os nomes de todas as pessoas convidadas.</p>
-      <p className="family-note">Ainda não recebeu? Fale com a família da Luna para pedir seu link.</p>
+  if (state === "confirmed") return <ConfirmationReceipt anyAttending={anyAttending} />;
+
+  if (state === "review" || state === "sending") return (
+    <div className="form-card family-rsvp" aria-busy={state === "sending"}>
+      <p className="form-kicker">Confira antes de enviar</p><h3>{invitation.familyName}</h3>
+      <ul className="family-summary">{invitation.members.map((member) => <li key={member.id}><strong>{member.name}</strong><span>{answers[member.id] === "sim" ? "Vai participar" : "Não poderá ir"}</span></li>)}</ul>
+      <p>Após confirmar, alterações deverão ser solicitadas diretamente aos pais da Luna.</p>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <button className="submit-button" disabled={state === "sending"} onClick={() => void submit()} type="button">{state === "sending" ? "Salvando…" : "Confirmar resposta definitiva"}</button>
+      <button className="secondary-button" disabled={state === "sending"} onClick={() => setState("ready")} type="button">Voltar e revisar</button>
+      {error && <button className="secondary-button" type="button" onClick={() => window.location.reload()}>Consultar resposta salva</button>}
     </div>
   );
-  if (!invitation) return <div className="form-card family-rsvp"><p className="form-error" role="alert">{error}</p><button className="secondary-button" onClick={() => void loadInvitation()} type="button">Tentar novamente</button></div>;
-  if (state === "success") return (
-    <div className="form-card family-rsvp success-card" role="status">
-      <div className="success-icon" aria-hidden="true">✓</div>
-      <p className="form-kicker">Resposta registrada</p><h3>Obrigada por responder!</h3>
-      <p>{invitation.familyName}</p>
-      <ul className="family-summary">{invitation.members.map((member) => <li key={member.id}><strong>{member.name}</strong><span>{member.attendance === "sim" ? "Vai participar" : "Não poderá ir"}</span></li>)}</ul>
-      <p>Se os planos mudarem, você pode atualizar a resposta neste mesmo link.</p>
-      <button className="secondary-button" type="button" onClick={() => setState("ready")}>Alterar minha resposta</button>
-    </div>
-  );
+
   return (
-    <form className="form-card family-rsvp" onSubmit={submit} aria-busy={state === "sending"}>
+    <form className="form-card family-rsvp" onSubmit={review} data-rsvp-state="pending">
       <div><p className="form-kicker">Confirmação de presença</p><h3>{invitation.familyName}</h3><p>Olá, {invitation.headName}! Conte quem vai celebrar com a Luna.</p></div>
-      <p className="family-note">Este convite é válido somente para as {invitation.members.length} pessoa(s) abaixo. Marque uma resposta para cada nome.</p>
-      {invitation.respondedAt && <p className="family-note">Já recebemos uma resposta. Você pode atualizá-la sem duplicar a confirmação.</p>}
+      <p className="family-note">Seu convite inclui exatamente {invitation.totalGuests} pessoa(s), já listadas abaixo. Responda por cada nome.</p>
       {invitation.members.map((member) => (
-        <fieldset className="member-response" disabled={state === "sending"} key={member.id}>
-          <legend>{member.name} <small>{member.kind === "crianca" ? "Criança" : "Adulto"}</small></legend>
+        <fieldset className="member-response" key={member.id}>
+          <legend>{member.name}{member.kind !== "nao_informado" && <small>{kindLabels[member.kind]}</small>}</legend>
           <div className="choice-row">
             {(["sim", "nao"] as const).map((value) => (
               <label className={answers[member.id] === value ? "choice selected" : "choice"} key={value}>
@@ -96,10 +72,9 @@ export function RsvpForm() {
           </div>
         </fieldset>
       ))}
-      <label className="field"><span>Um recadinho para a Luna <small>(opcional)</small></span><textarea maxLength={400} rows={3} value={message} disabled={state === "sending"} onChange={(event) => setMessage(event.target.value)} /></label>
-      {error && <div><p className="form-error" role="alert">{error}</p><button className="secondary-button" type="button" onClick={() => void loadInvitation()}>Recarregar resposta salva</button></div>}
-      <button className="submit-button" type="submit" disabled={state === "sending"}>{state === "sending" ? "Salvando…" : "Salvar resposta da família"}<span aria-hidden="true">✦</span></button>
-      <p className="privacy-note">Os nomes e as respostas são usados somente para organizar a festa. Não compartilhe seu link fora da família.</p>
+      <label className="field"><span>Um recadinho para a Luna <small>(opcional)</small></span><textarea maxLength={400} rows={3} value={message} onChange={(event) => setMessage(event.target.value)} /></label>
+      <button className="submit-button" type="submit">Revisar minha resposta<span aria-hidden="true">✦</span></button>
+      <p className="privacy-note">Cada convite aceita uma resposta. Envie seu link apenas às pessoas da sua família.</p>
     </form>
   );
 }

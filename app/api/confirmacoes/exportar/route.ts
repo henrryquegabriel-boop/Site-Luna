@@ -1,7 +1,7 @@
 import { getRawDb } from "../../../../db";
 import { listInvitations } from "../../../../lib/invitation-store";
 import { apiError, privateHeaders, requireAdmin } from "../../../../lib/api";
-import { csvCell, invitePath } from "../../../../lib/invitations";
+import { csvCell, invitePath, kindLabels } from "../../../../lib/invitations";
 
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
@@ -17,10 +17,10 @@ export async function GET(request: Request) {
     } else {
       const families = await listInvitations(getRawDb());
       if (url.searchParams.has("links")) {
-        lines = [["Família", "Responsável", "Convite ativo", "Link individual"], ...families.map((family) => [family.familyName, family.headName, family.active ? "Sim" : "Não", new URL(invitePath(family.token), url.origin).href])];
+        lines = [["ID_Convidado", "Nome_Chefe_Familia", "Token_Unico", "Limite_Acompanhantes", "Status_Confirmacao", "Total_Convidados", "Convite_Ativo", "Link_Individual"], ...families.map((family) => [family.id, family.headName, family.token, family.companionLimit, family.status, family.totalGuests, family.active ? "Sim" : "Não", new URL(invitePath(family.token), url.origin).href])];
         filename = "links-familias-luna.csv";
       } else {
-        lines = [["Família", "Responsável", "Convidado", "Tipo", "Resposta", "Convite ativo", "Respondido em", "Recado"], ...families.flatMap((family) => family.members.map((member) => [family.familyName, family.headName, member.name, member.kind === "adulto" ? "Adulto" : "Criança", member.attendance === "sim" ? "Vai" : member.attendance === "nao" ? "Não vai" : "Pendente", family.active ? "Sim" : "Não", family.respondedAt, family.message]))];
+        lines = [["ID_Convidado", "Família", "Nome_Chefe_Familia", "Status_Confirmacao", "Limite_Acompanhantes", "Total_Convidados", "Pessoa", "Faixa", "Presença", "Convite ativo", "Respondido em", "Recado"], ...families.flatMap((family) => family.members.map((member) => [family.id, family.familyName, family.headName, family.status, family.companionLimit, family.totalGuests, member.name, kindLabels[member.kind], member.attendance === "sim" ? "Vai" : member.attendance === "nao" ? "Não vai" : "Pendente", family.active ? "Sim" : "Não", family.respondedAt, family.message]))];
       }
     }
     return new Response("\uFEFF" + lines.map((line) => line.map(csvCell).join(";")).join("\r\n"), { headers: { ...privateHeaders, "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${filename}"` } });

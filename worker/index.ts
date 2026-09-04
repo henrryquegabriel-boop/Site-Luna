@@ -44,7 +44,7 @@ const worker = {
     const response = new Response(result.body, result);
     // Never send a family's private URL to external players, maps or CDNs.
     response.headers.set("Referrer-Policy", "strict-origin");
-    if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/confirmacoes") || url.searchParams.has("convite")) {
+    if (url.pathname === "/" || url.pathname.startsWith("/rsvp") || url.pathname.startsWith("/api/") || url.pathname.startsWith("/confirmacoes") || url.searchParams.has("convite") || url.searchParams.has("token")) {
       response.headers.set("Cache-Control", "private, no-store, max-age=0");
       response.headers.set("X-Robots-Tag", "noindex, nofollow");
     }

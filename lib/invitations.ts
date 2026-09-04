@@ -1,16 +1,24 @@
 export type Attendance = "pendente" | "sim" | "nao";
-export type MemberInput = { name: string; kind: "adulto" | "crianca" };
+export const kindLabels = { adulto: "Adulto", crianca: "Criança", crianca_menor5: "Criança menor de 5 anos", nao_informado: "Faixa não informada" } as const;
+export type MemberInput = { name: string; kind: keyof typeof kindLabels };
 export type FamilyInput = { familyName: string; headName: string; members: MemberInput[] };
 export type InvitationMember = MemberInput & { id: string; attendance: Attendance };
 export type Invitation = {
   id: string; familyName: string; headName: string; revision: number;
   message: string; respondedAt: string | null; members: InvitationMember[];
+  status: "Pendente" | "Confirmado"; companionLimit: number; totalGuests: number;
 };
 export type AdminInvitation = Invitation & { token: string; active: boolean };
+export type ConfirmedInvitation = { status: "Confirmado"; anyAttending: boolean };
+export type PendingInvitation = Invitation & { status: "Pendente" };
+export type GuestInvitation = PendingInvitation | ConfirmedInvitation;
+export const CONFIRMED_MESSAGE = "Sua presença (e de sua família) já foi confirmada! Caso precise fazer alterações, entre em contato diretamente com os pais.";
+export const DECLINED_MESSAGE = "Sua resposta (e de sua família) já foi registrada! Caso precise fazer alterações, entre em contato diretamente com os pais.";
 
 export class InvitationError extends Error {
   status: number;
-  constructor(message: string, status = 400) { super(message); this.status = status; }
+  code?: string;
+  constructor(message: string, status = 400, code?: string) { super(message); this.status = status; this.code = code; }
 }
 export function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new InvitationError("Dados inválidos.");
@@ -24,7 +32,7 @@ export function textValue(value: unknown, label: string, max: number, optional =
 }
 export function familyKey(value: string) { return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("pt-BR"); }
 export function validateFamilies(value: unknown): FamilyInput[] {
-  if (!Array.isArray(value) || !value.length || value.length > 25) throw new InvitationError("Cadastre de 1 a 25 famílias por vez.");
+  if (!Array.isArray(value) || !value.length || value.length > 100) throw new InvitationError("Cadastre de 1 a 100 famílias por vez.");
   const keys = new Set<string>(); let total = 0;
   const families = value.map((item) => {
     const row = object(item);
@@ -39,14 +47,13 @@ export function validateFamilies(value: unknown): FamilyInput[] {
       const person = object(item); const name = textValue(person.name, "o nome do convidado", 100);
       if (names.has(familyKey(name))) throw new InvitationError(`Há nomes repetidos em ${familyName}. Use nomes completos para diferenciá-los.`);
       names.add(familyKey(name));
-      if (person.kind !== "adulto" && person.kind !== "crianca") throw new InvitationError(`Informe adulto ou crianca para ${name}.`);
+      if (typeof person.kind !== "string" || !Object.hasOwn(kindLabels, person.kind)) throw new InvitationError(`Revise a faixa etária de ${name}.`);
       return { name, kind: person.kind } as MemberInput;
     });
-    if (!members.some((member) => familyKey(member.name) === familyKey(headName) && member.kind === "adulto")) throw new InvitationError(`Inclua ${headName}, responsável de ${familyName}, na lista de adultos.`);
     total += members.length;
     return { familyName, headName, members };
   });
-  if (total > 100) throw new InvitationError("Importe no máximo 100 pessoas por vez. Divida a lista em arquivos menores.");
+  if (total > 300) throw new InvitationError("Importe no máximo 300 pessoas por vez. Divida a lista em arquivos menores.");
   return families;
 }
 export function validateResponse(value: unknown, members: InvitationMember[]) {
@@ -67,7 +74,7 @@ export function validateResponse(value: unknown, members: InvitationMember[]) {
 export function createToken() {
   return Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
-export function invitePath(token: string) { return `/?convite=${encodeURIComponent(token)}`; }
+export function invitePath(token: string) { return `/?token=${encodeURIComponent(token)}`; }
 export function csvCell(value: unknown) {
   let text = String(value ?? "");
   // Prevent spreadsheet formulas from untrusted guest names and messages.
